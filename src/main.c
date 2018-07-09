@@ -25,6 +25,15 @@ void send_string(const char* s) {
 	}
 }
 
+//printf calls it at the end
+int __io_putchar(int c)
+{
+    if (c=='\n')
+        send_char('\r');
+    send_char(c);
+    return c;
+}
+
 void receive_led_command() {
 	static int i = 0;
 	if (USART_GetFlagStatus(USART2, USART_FLAG_RXNE)) {
@@ -78,6 +87,6 @@ int main(void)
 	USART_Cmd(USART2, ENABLE);
 
 	while(1) {
-		receive_led_command();
+		printf("Hello world!\n");
 	}
 }
