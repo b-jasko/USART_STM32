@@ -10,6 +10,9 @@
 
 
 #include "stm32f10x.h"
+#include <string.h>
+
+volatile char command[5] = "";
 
 void send_char(char c) {
 	while (USART_GetFlagStatus(USART2, USART_FLAG_TXE) == RESET);
@@ -19,6 +22,28 @@ void send_char(char c) {
 void send_string(const char* s) {
 	while(*s) {
 		send_char(*s++);
+	}
+}
+
+void receive_led_command() {
+	static int i = 0;
+	if (USART_GetFlagStatus(USART2, USART_FLAG_RXNE)) {
+		char c = USART_ReceiveData(USART2);
+		command[i] = c;
+		i++;
+		if (c == '\r') {
+			if (strcmp(command, "on\r") == 0) {
+				send_string("LED ON\r\n");
+				GPIO_SetBits(GPIOC, 1<<0);
+			} else if (strcmp(command, "off\r") == 0) {
+				send_string("LED OFF\r\n");
+				GPIO_ResetBits(GPIOC, 1<<0);
+			} else {
+				send_string("Nieznany komunikat\r\n");
+			}
+			i = 0;
+			memset(command, 0, 5);
+		}
 	}
 }
 
@@ -53,19 +78,6 @@ int main(void)
 	USART_Cmd(USART2, ENABLE);
 
 	while(1) {
-		if (USART_GetFlagStatus(USART2, USART_FLAG_RXNE)) {
-			char c = USART_ReceiveData(USART2);
-			switch(c) {
-			case 'a':
-				send_string("Odebrano komunikat A\r\n");
-				break;
-			case 'b':
-				send_string("Odebrano komunikat B\r\n");
-				break;
-			default:
-				send_string("Nieznany komunikat\r\n");
-				break;
-			}
-		}
+		receive_led_command();
 	}
 }
